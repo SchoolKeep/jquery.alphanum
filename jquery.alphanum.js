@@ -165,13 +165,13 @@
 			});
 
 			$textbox.bind("keypress", function(e){
-				return validKeyEvent(e, $textbox, trimFunction, options);
+				return validKeyEvent(e, $textbox, trimFunction, settings);
 			});
 		});
 
 	}
 
-	function validKeyEvent(e, $textbox, trimFunction, options) {
+	function validKeyEvent(e, $textbox, trimFunction, settings) {
 		// Determine which key is pressed.
 		// If it's a control key, then allow the event's default action to occur eg backspace, tab
 		var charCode = !e.charCode ? e.which : e.charCode;
@@ -198,7 +198,7 @@
 		// Unfortunately, it isn't enough to just check if the new char is valid because some chars
 		// are position sensitive eg the decimal point '.'' or the minus sign '-'' are only valid in certain positions.
 		var potentialTextAfterKeypress = textBeforeKeypress.substring(0, start) + newChar + textBeforeKeypress.substring(end);
-		var validatedText              = trimFunction(potentialTextAfterKeypress, options);
+		var validatedText              = trimFunction(potentialTextAfterKeypress, settings, true);
 
 		// If the keypress would cause the textbox to contain invalid characters, then cancel the keypress event
 		return validatedText === potentialTextAfterKeypress;
@@ -474,7 +474,7 @@
 	/********************************
 	 * Trims a string according to the settings provided
 	 ********************************/
-	function trimAlphaNum(inputString, settings){
+	function trimAlphaNum(inputString, settings, do_not_force){
 
 		if(typeof inputString != "string")
 			return inputString;
@@ -493,10 +493,12 @@
 
 		var outputString = outChars.join("");
 
-		if(settings.forceLower)
-			outputString = outputString.toLowerCase();
-		else if(settings.forceUpper)
-			outputString = outputString.toUpperCase();
+		if(!do_not_force) {
+			if(settings.forceLower)
+				outputString = outputString.toLowerCase();
+			else if(settings.forceUpper)
+				outputString = outputString.toUpperCase();
+		}
 
 		return outputString;
 	}
