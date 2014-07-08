@@ -165,44 +165,47 @@
 			});
 
 			$textbox.bind("keypress", function(e){
-				// Determine which key is pressed.
-				// If it's a control key, then allow the event's default action to occur eg backspace, tab
-				var charCode = !e.charCode ? e.which : e.charCode;
-				if(isControlKey(charCode) || e.ctrlKey || e.metaKey ) // cmd on MacOS
-					return;
-
-				var newChar         = String.fromCharCode(charCode);
-
-				// Determine if some text was selected / highlighted when the key was pressed
-				var selectionObject = $textbox.selection();
-				var start = selectionObject.start;
-				var end   = selectionObject.end;
-
-				var textBeforeKeypress  = $textbox.val();
-
-				// The new char may be inserted:
-				//  1) At the start
-				//  2) In the middle
-				//  3) At the end
-				//  4) User highlights some text and then presses a key which would replace the highlighted text
-				//
-				// Here we build the string that would result after the keypress.
-				// If the resulting string is invalid, we cancel the event.
-				// Unfortunately, it isn't enough to just check if the new char is valid because some chars
-				// are position sensitive eg the decimal point '.'' or the minus sign '-'' are only valid in certain positions.
-				var potentialTextAfterKeypress = textBeforeKeypress.substring(0, start) + newChar + textBeforeKeypress.substring(end);
-				var validatedText              = trimFunction(potentialTextAfterKeypress, settings);
-
-				// If the keypress would cause the textbox to contain invalid characters, then cancel the keypress event
-				if(validatedText != potentialTextAfterKeypress)
-					e.preventDefault();
+				return validKeyEvent(e, $textbox, trimFunction, options);
 			});
 		});
 
 	}
 
+	function validKeyEvent(e, $textbox, trimFunction, options) {
+		// Determine which key is pressed.
+		// If it's a control key, then allow the event's default action to occur eg backspace, tab
+		var charCode = !e.charCode ? e.which : e.charCode;
+		if(isControlKey(charCode) || e.ctrlKey || e.metaKey ) // cmd on MacOS
+			return;
+
+		var newChar         = String.fromCharCode(charCode);
+
+		// Determine if some text was selected / highlighted when the key was pressed
+		var selectionObject = $textbox.selection();
+		var start = selectionObject.start;
+		var end   = selectionObject.end;
+
+		var textBeforeKeypress  = $textbox.val();
+
+		// The new char may be inserted:
+		//  1) At the start
+		//  2) In the middle
+		//  3) At the end
+		//  4) User highlights some text and then presses a key which would replace the highlighted text
+		//
+		// Here we build the string that would result after the keypress.
+		// If the resulting string is invalid, we cancel the event.
+		// Unfortunately, it isn't enough to just check if the new char is valid because some chars
+		// are position sensitive eg the decimal point '.'' or the minus sign '-'' are only valid in certain positions.
+		var potentialTextAfterKeypress = textBeforeKeypress.substring(0, start) + newChar + textBeforeKeypress.substring(end);
+		var validatedText              = trimFunction(potentialTextAfterKeypress, options);
+
+		// If the keypress would cause the textbox to contain invalid characters, then cancel the keypress event
+		return validatedText === potentialTextAfterKeypress;
+	}
+
 	// Ensure the text is a valid number when focus leaves the textbox
-	// This catches the case where a user enters '-' or '.' without entering any digits
+	//This catches the case where a user enters '-' or '.' without entering any digits
 	function numericField_Blur(inputBox, settings) {
 		var fieldValueNumeric = parseFloat($(inputBox).val());
 		var $inputBox = $(inputBox);
@@ -686,16 +689,22 @@
 	}
 
 	// Backdoor for testing
-	$.fn.alphanum.backdoorAlphaNum = function(inputString, settings){
-		var combinedSettings = getCombinedSettingsAlphaNum(settings);
+	$.fn.alphanum.backdoorAlphaNumCallback = function(keypressEvent, $textbox, settings){
+		var settings = getCombinedSettingsAlphaNum(settings);
 
-		return trimAlphaNum(inputString, combinedSettings);
+		if(validKeyEvent(keypressEvent, $textbox, trimAlphaNum, settings)) {
+			$textbox.val($textbox.val() + keypressEvent.char);
+			trimTextbox($textbox, trimAlphaNum, settings, "");
+		}
 	};
 
-	$.fn.alphanum.backdoorNumeric = function(inputString, settings){
-		var combinedSettings = getCombinedSettingsNum(settings);
+	$.fn.alphanum.backdoorNumericCallback = function(keypressEvent, $textbox, settings){
+		var settings = getCombinedSettingsNum(settings);
 
-		return trimNum(inputString, combinedSettings);
+		if(validKeyEvent(keypressEvent, $textbox, trimNum, settings)) {
+			$textbox.val($textbox.val() + keypressEvent.char);
+			trimTextbox($textbox, trimNum, settings, "");
+		}
 	};
 
 	$.fn.alphanum.setNumericSeparators = function(settings) {

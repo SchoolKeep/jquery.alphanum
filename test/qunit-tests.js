@@ -30,26 +30,23 @@ jQuery(document).ready(function(){
 
 		var input    = testCase[0];
 		var expected = testCase[1];
-		var actual;
+		var callback, keypressEvent, $textbox;
 
 		if(testType == "alphanum")
-			runTestAlphaNum(input, expected, options);
+			callback = $.fn.alphanum.backdoorAlphaNumCallback
 		else if (testType == "numeric")
-			runTestNumeric(input, expected, options);
-	}
+			callback = $.fn.alphanum.backdoorNumericCallback
 
-	function runTestAlphaNum(inputString, expectedString, options){
+		keypressEvent = $.Event("keypress");
+		$textbox = $("<input>");
 
-		var actual = $.fn.alphanum.backdoorAlphaNum(inputString, options);
+		for (var i = 0, len = input.length; i < len; i++) {
+			keypressEvent.which = input.charCodeAt(i);
+			keypressEvent.char = input[i];
+			callback(keypressEvent, $textbox, options);
+		}
 
-		equal(actual, expectedString);
-	}
-
-	function runTestNumeric(inputString, expectedString, options){
-
-		var actual = $.fn.alphanum.backdoorNumeric(inputString, options);
-
-		equal(actual, expectedString);
+		equal($textbox.val(), expected)
 	}
 
 	function chainingTests() {
